@@ -1,19 +1,31 @@
 services:
-  localstack:
-    container_name: '${LOCALSTACK_DOCKER_NAME-localstack_main}'
-    image: 'localstack/localstack:0.14.5'
+  minio:
+    container_name: '${MINIO_DOCKER_NAME-minio_main}'
+    image: 'minio/minio:latest'
     network_mode: bridge
+    command: server /data --console-address ':9001'
     environment:
-      - SERVICES=s3
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     ports:
-      - '${DOCKER_LOCALSTACK_PORT:-4566}:4566'
+      - '${DOCKER_MINIO_PORT:-9001}:9000'
+      - '${DOCKER_MINIO_CONSOLE_PORT:-9002}:9001'
     volumes:
-      - '${TMPDIR:-/tmp/localstack}:/tmp/localstack'
-      - '/var/run/docker.sock:/var/run/docker.sock'
-    healthcheck:
-      test: "bash -c 'AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test aws --endpoint-url=http://127.0.0.1:4566 s3 ls'"
-      retries: 5
-      interval: 10s
+      - '${TMPDIR:-/tmp/minio}:/data'
+
+  minio-init:
+    container_name: '${MINIO_INIT_DOCKER_NAME-minio_init}'
+    image: 'minio/mc:latest'
+    network_mode: service:minio
+    depends_on:
+      - minio
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-novu}
+    entrypoint: >-
+      /bin/sh -c "until mc alias set minio http://127.0.0.1:9000 $$MINIO_ACCESS_KEY $$MINIO_SECRET_KEY; do sleep 1; done;
+      mc mb --ignore-existing minio/$$MINIO_BUCKET"
 
   mongo:
     container_name: '${MONGO_DOCKER_NAME-mongo_main}'

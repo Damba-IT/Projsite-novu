@@ -22,7 +22,7 @@ From the repo root:
 docker compose -f docker/local/docker-compose.yml up -d
 ```
 
-This starts MongoDB, Redis, and LocalStack.
+This starts MongoDB, Redis, and MinIO. Set `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY` before starting the services; the S3 API is available at `http://127.0.0.1:9001` and the MinIO Console at `http://127.0.0.1:9002`.
 
 ### 2. Install and run Novu from source
 
